@@ -44,7 +44,7 @@ claude mcp add travelcode -- npx mcp-travelcode
 | `search_flights` | Search for flights (handles async polling automatically) |
 | `get_flight_results` | Filter/sort/paginate existing search results |
 
-### Flight Statistics (AeroDataBox)
+### Flight Statistics
 
 | Tool | Description |
 |------|-------------|
