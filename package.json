@@ -1,27 +1,56 @@
 {
   "name": "mcp-travelcode",
   "version": "1.0.0",
-  "description": "MCP server for TravelCode corporate travel API — flights search, airports, airlines",
+  "description": "MCP server for TravelCode — flights, hotels, orders. Search flights & hotels, manage bookings via AI assistants.",
   "type": "module",
+  "main": "./build/index.js",
   "bin": {
-    "mcp-travelcode": "./build/index.js"
+    "mcp-travelcode": "./build/index.js",
+    "mcp-travelcode-auth": "./build/auth/cli-auth.js"
+  },
+  "files": [
+    "build/**/*.js",
+    "build/**/*.d.ts",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "travel",
+    "flights",
+    "hotels",
+    "booking",
+    "claude",
+    "ai-tools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/egorceo/mcp-travelcode"
   },
   "scripts": {
+    "prepublishOnly": "npm run build",
     "build": "tsc",
     "start": "node build/index.js",
+    "start:http": "node build/http-server.js",
     "dev": "tsx src/index.ts",
+    "dev:http": "tsx src/http-server.ts",
+    "auth": "node build/auth/cli-auth.js auth",
+    "auth:status": "node build/auth/cli-auth.js status",
+    "auth:logout": "node build/auth/cli-auth.js logout",
     "test": "vitest run",
     "test:watch": "vitest",
     "inspect": "npx @modelcontextprotocol/inspector node build/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
+    "express": "^5.2.1",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
-    "typescript": "^5.7.0",
     "tsx": "^4.0.0",
+    "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },
   "engines": {

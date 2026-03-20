@@ -1,0 +1,466 @@
+openapi: 3.0.3
+info:
+  title: Travel Code — OAuth 2.1 Authorization Server
+  description: |
+    OAuth 2.1 авторизация для AI-клиентов (MCP-серверы, Claude Desktop, Cursor и др.).
+
+    **Особенности:**
+    - Токены: opaque Bearer (случайные строки)
+    - PKCE обязателен (S256)
+    - Client authentication: `none` (public clients)
+    - Refresh token rotation
+    - Dynamic Client Registration (RFC 7591)
+    - Resource Indicators (RFC 8707) — опционально
+  version: 1.0.0
+  contact:
+    name: Travel Code
+    url: https://travel-code.com
+
+servers:
+  - url: https://api.travel-code.com
+    description: Production
+  - url: http://localhost
+    description: Local development
+
+tags:
+  - name: Discovery
+    description: Server metadata
+  - name: Authorization
+    description: Authorization flow
+  - name: Token
+    description: Token management
+  - name: Registration
+    description: Dynamic Client Registration
+
+paths:
+  /.well-known/oauth-authorization-server:
+    get:
+      tags: [Discovery]
+      summary: Server Metadata
+      description: |
+        Возвращает метаданные OAuth Authorization Server.
+        Используется MCP-клиентами для автоматического обнаружения эндпоинтов.
+      responses:
+        '200':
+          description: Server metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerMetadata'
+              example:
+                issuer: "https://api.travel-code.com"
+                authorization_endpoint: "https://api.travel-code.com/oauth/authorize"
+                token_endpoint: "https://api.travel-code.com/oauth/token"
+                registration_endpoint: "https://api.travel-code.com/oauth/register"
+                revocation_endpoint: "https://api.travel-code.com/oauth/revoke"
+                scopes_supported:
+                  - "flights:search"
+                  - "flights:status"
+                  - "flights:stats"
+                  - "airports:read"
+                  - "airlines:read"
+                response_types_supported: ["code"]
+                grant_types_supported: ["authorization_code", "refresh_token"]
+                token_endpoint_auth_methods_supported: ["none"]
+                code_challenge_methods_supported: ["S256"]
+
+  /oauth/authorize:
+    get:
+      tags: [Authorization]
+      summary: Authorization Endpoint
+      description: |
+        Открывается в браузере пользователя. Показывает страницу входа и согласия.
+
+        При успешной аутентификации — редирект на `redirect_uri?code=AUTH_CODE&state=STATE`.
+        При отказе — редирект на `redirect_uri?error=access_denied&state=STATE`.
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+          description: Всегда `code`
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ID клиента (из регистрации)
+          example: "abc123def456"
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: URL для callback
+          example: "http://localhost:3000/callback"
+        - name: scope
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Запрашиваемые права через пробел
+          example: "flights:search airports:read"
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Случайная строка для CSRF-защиты
+          example: "xyz789"
+        - name: code_challenge
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "PKCE challenge: base64url(SHA256(code_verifier))"
+          example: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+        - name: code_challenge_method
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [S256]
+          description: Всегда `S256`
+        - name: resource
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+          description: URI ресурса (RFC 8707)
+          example: "https://mcp-travelcode.example.com"
+      responses:
+        '200':
+          description: HTML-страница согласия (consent page)
+          content:
+            text/html:
+              schema:
+                type: string
+        '302':
+          description: |
+            Редирект после обработки:
+            - Успех: `redirect_uri?code=AUTH_CODE&state=STATE`
+            - Отказ: `redirect_uri?error=access_denied&state=STATE`
+            - Ошибка: `redirect_uri?error=invalid_request&error_description=...&state=STATE`
+
+  /oauth/token:
+    post:
+      tags: [Token]
+      summary: Token Endpoint
+      description: |
+        Обмен authorization code на токены или обновление через refresh token.
+
+        **PKCE обязателен** — запросы без `code_verifier` отклоняются.
+
+        **Refresh token rotation** — при обновлении старый refresh token отзывается, выдаётся новый.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/AuthorizationCodeGrant'
+                - $ref: '#/components/schemas/RefreshTokenGrant'
+            examples:
+              authorization_code:
+                summary: Обмен code на токены
+                value:
+                  grant_type: authorization_code
+                  code: "AUTH_CODE_HERE"
+                  redirect_uri: "http://localhost:3000/callback"
+                  client_id: "abc123def456"
+                  code_verifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+              refresh_token:
+                summary: Обновление токена
+                value:
+                  grant_type: refresh_token
+                  refresh_token: "REFRESH_TOKEN_HERE"
+                  client_id: "abc123def456"
+      responses:
+        '200':
+          description: Токены выданы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              example:
+                access_token: "randomString64chars..."
+                token_type: "Bearer"
+                expires_in: 3600
+                refresh_token: "anotherRandomString64chars..."
+                scope: "flights:search airports:read"
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+              examples:
+                invalid_code:
+                  summary: Невалидный code
+                  value:
+                    stat: 400
+                    code: 0
+                    text: "[0] Invalid authorization code"
+                code_used:
+                  summary: Code уже использован
+                  value:
+                    stat: 400
+                    code: 0
+                    text: "[0] Authorization code already used"
+                code_expired:
+                  summary: Code истёк
+                  value:
+                    stat: 400
+                    code: 0
+                    text: "[0] Authorization code expired"
+                pkce_failed:
+                  summary: PKCE верификация не прошла
+                  value:
+                    stat: 400
+                    code: 0
+                    text: "[0] Invalid code_verifier (PKCE verification failed)"
+                invalid_refresh:
+                  summary: Невалидный refresh token
+                  value:
+                    stat: 400
+                    code: 0
+                    text: "[0] Invalid or expired refresh token"
+
+  /oauth/register:
+    post:
+      tags: [Registration]
+      summary: Dynamic Client Registration
+      description: |
+        Регистрация нового OAuth-клиента.
+        Возвращает сгенерированный `client_id` для использования в авторизации.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientRegistrationRequest'
+            example:
+              client_name: "MCP TravelCode Server"
+              redirect_uris: ["http://localhost:3000/callback"]
+              grant_types: ["authorization_code", "refresh_token"]
+              response_types: ["code"]
+              token_endpoint_auth_method: "none"
+      responses:
+        '201':
+          description: Клиент зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientRegistrationResponse'
+              example:
+                client_id: "generatedRandomString32chars"
+                client_name: "MCP TravelCode Server"
+                redirect_uris: ["http://localhost:3000/callback"]
+                grant_types: ["authorization_code", "refresh_token"]
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+
+  /oauth/revoke:
+    post:
+      tags: [Token]
+      summary: Token Revocation
+      description: |
+        Отзыв access token или refresh token. Всегда возвращает 200 OK (по RFC 7009).
+
+        При отзыве access token — связанные refresh tokens тоже отзываются.
+        При отзыве refresh token — связанный access token тоже отзывается.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+            example:
+              token: "TOKEN_TO_REVOKE"
+              token_type_hint: "access_token"
+      responses:
+        '200':
+          description: Токен отозван (или не найден — 200 в обоих случаях)
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  schemas:
+    ServerMetadata:
+      type: object
+      properties:
+        issuer:
+          type: string
+          format: uri
+        authorization_endpoint:
+          type: string
+          format: uri
+        token_endpoint:
+          type: string
+          format: uri
+        registration_endpoint:
+          type: string
+          format: uri
+        revocation_endpoint:
+          type: string
+          format: uri
+        scopes_supported:
+          type: array
+          items:
+            type: string
+        response_types_supported:
+          type: array
+          items:
+            type: string
+        grant_types_supported:
+          type: array
+          items:
+            type: string
+        token_endpoint_auth_methods_supported:
+          type: array
+          items:
+            type: string
+        code_challenge_methods_supported:
+          type: array
+          items:
+            type: string
+
+    AuthorizationCodeGrant:
+      type: object
+      required: [grant_type, code, redirect_uri, client_id, code_verifier]
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code]
+        code:
+          type: string
+          description: Authorization code из /oauth/authorize
+        redirect_uri:
+          type: string
+          format: uri
+          description: Тот же redirect_uri что в authorize
+        client_id:
+          type: string
+          description: ID клиента
+        code_verifier:
+          type: string
+          description: "PKCE verifier (SHA256 должен совпасть с code_challenge)"
+        resource:
+          type: string
+          format: uri
+          description: URI ресурса (RFC 8707)
+
+    RefreshTokenGrant:
+      type: object
+      required: [grant_type, refresh_token, client_id]
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token]
+        refresh_token:
+          type: string
+          description: Текущий refresh token
+        client_id:
+          type: string
+          description: ID клиента
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: Opaque Bearer token (64 символа)
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Время жизни access token в секундах
+          example: 3600
+        refresh_token:
+          type: string
+          description: Opaque refresh token (64 символа)
+        scope:
+          type: string
+          description: Выданные scopes через пробел
+      required: [access_token, token_type, expires_in, refresh_token, scope]
+
+    ClientRegistrationRequest:
+      type: object
+      required: [client_name, redirect_uris]
+      properties:
+        client_name:
+          type: string
+          description: Название приложения
+        redirect_uris:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Разрешённые redirect URI
+        grant_types:
+          type: array
+          items:
+            type: string
+          default: ["authorization_code", "refresh_token"]
+        response_types:
+          type: array
+          items:
+            type: string
+          default: ["code"]
+        token_endpoint_auth_method:
+          type: string
+          default: "none"
+
+    ClientRegistrationResponse:
+      type: object
+      properties:
+        client_id:
+          type: string
+          description: Сгенерированный ID клиента (32 символа)
+        client_name:
+          type: string
+        redirect_uris:
+          type: array
+          items:
+            type: string
+        grant_types:
+          type: array
+          items:
+            type: string
+      required: [client_id, client_name, redirect_uris, grant_types]
+
+    RevokeRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: Access token или refresh token для отзыва
+        token_type_hint:
+          type: string
+          enum: [access_token, refresh_token]
+          description: Подсказка типа токена (опционально)
+
+    OAuthError:
+      type: object
+      properties:
+        stat:
+          type: integer
+          description: HTTP статус код
+        code:
+          type: integer
+          description: Внутренний код ошибки
+        text:
+          type: string
+          description: Описание ошибки

@@ -10,6 +10,16 @@ import { registerGetFlightStatus } from "./tools/get-flight-status.js";
 import { registerGetAirportFlights } from "./tools/get-airport-flights.js";
 import { registerGetFlightDelayStats } from "./tools/get-flight-delay-stats.js";
 import { registerGetAirportDelayStats } from "./tools/get-airport-delay-stats.js";
+import { registerListOrders } from "./tools/list-orders.js";
+import { registerGetOrder } from "./tools/get-order.js";
+import { registerCreateOrder } from "./tools/create-order.js";
+import { registerCheckOrderCancellation } from "./tools/check-order-cancellation.js";
+import { registerCancelOrder } from "./tools/cancel-order.js";
+import { registerCheckOrderModification } from "./tools/check-order-modification.js";
+import { registerModifyOrder } from "./tools/modify-order.js";
+import { registerSearchHotelLocations } from "./tools/search-hotel-locations.js";
+import { registerGetHotelLocation } from "./tools/get-hotel-location.js";
+import { registerSearchHotels } from "./tools/search-hotels.js";
 
 export function createServer(config: TravelCodeConfig): McpServer {
   const server = new McpServer({
@@ -33,6 +43,20 @@ export function createServer(config: TravelCodeConfig): McpServer {
   registerGetAirportFlights(server, client);
   registerGetFlightDelayStats(server, client);
   registerGetAirportDelayStats(server, client);
+
+  // Order management tools
+  registerListOrders(server, client);
+  registerGetOrder(server, client);
+  registerCreateOrder(server, client);
+  registerCheckOrderCancellation(server, client);
+  registerCancelOrder(server, client);
+  registerCheckOrderModification(server, client);
+  registerModifyOrder(server, client);
+
+  // Hotel search tools
+  registerSearchHotelLocations(server, client);
+  registerGetHotelLocation(server, client);
+  registerSearchHotels(server, client);
 
   return server;
 }

@@ -63,52 +63,47 @@ MCP OAuth 2.1 spec полностью применяется. MCP-клиент (
 
 ## Шаги реализации
 
-### Фаза 0: Узнать OAuth-возможности TravelCode API
-- [ ] Есть ли у TravelCode OAuth endpoints? (`/oauth/authorize`, `/oauth/token`)
-- [ ] Если нет → нужен свой Authorization Server (или Auth0/WorkOS)
-- [ ] Какие scopes, TTL токенов, rate limits?
+### Фаза 0: Узнать OAuth-возможности TravelCode API ✅
+- [x] Есть ли у TravelCode OAuth endpoints? — **ДА**
+  - `GET /.well-known/oauth-authorization-server` — Server Metadata
+  - `GET /oauth/authorize` — Authorization Endpoint (consent page)
+  - `POST /oauth/token` — Token Endpoint
+  - `POST /oauth/register` — Dynamic Client Registration
+  - `POST /oauth/revoke` — Token Revocation
+- [x] Формат токенов: **opaque** (случайные строки, не JWT)
+- [x] PKCE: обязателен (S256)
+- [x] Scopes: `flights:search`, `flights:status`, `flights:stats`, `airports:read`, `airlines:read`
+- [x] TTL: access token 1ч, refresh token 30д, auth code 10мин
+- [x] Refresh token rotation: да
+- [x] DCR поддерживается
+- [x] Документация: `docs/oauth-api-reference.md`, `docs/openapi-oauth.yml`
 
-### Фаза 1: HTTP-транспорт
-- [ ] Добавить Streamable HTTP транспорт (параллельно с stdio)
-- [ ] Сервер слушает на HTTP порте (Express или встроенный `http`)
-- [ ] Настроить CORS, health check
+### Фаза 1: HTTP-транспорт ✅
+- [x] Добавить Streamable HTTP транспорт (`src/http-server.ts`)
+- [x] Express-сервер слушает на HTTP порте
+- [x] CORS настроен
+- [x] Health check: `GET /health`
+- [x] Stdio-транспорт (`src/index.ts`) работает как раньше
 
-### Фаза 2: Protected Resource Metadata
-- [ ] Реализовать `GET /.well-known/oauth-protected-resource`
-  ```json
-  {
-    "resource": "https://mcp-travelcode.example.com",
-    "authorization_servers": ["https://auth.travel-code.com"],
-    "scopes_supported": ["flights:search", "flights:status", "airports:read"],
-    "bearer_methods_supported": ["header"]
-  }
-  ```
-- [ ] При 401 возвращать `WWW-Authenticate: Bearer resource_metadata="..."`
+### Фаза 2: Protected Resource Metadata ✅
+- [x] `GET /.well-known/oauth-protected-resource` → указывает на TravelCode AS
+- [x] При 401 возвращает `WWW-Authenticate: Bearer resource_metadata="..."`
 
-### Фаза 3: Authorization Server
-**Вариант A — TravelCode сам AS:**
-- [ ] Прокси OAuth endpoints через MCP-сервер
+### Фаза 3: Authorization Server ✅
+**Реализован Вариант A — TravelCode сам AS:**
+- [x] TravelCode реализовал полный OAuth 2.1 AS
+- [x] MCP-клиент работает напрямую с TravelCode AS
+- [x] Наш сервер — только Protected Resource, не прокси AS
 
-**Вариант B — Внешний IdP (Auth0, WorkOS и т.п.):**
-- [ ] Настроить OAuth app в IdP
-- [ ] Прописать redirect URIs, scopes
-- [ ] Валидация JWT-токенов через JWKS
+### Фаза 4: Token handling в MCP-сервере ✅
+- [x] Bearer token извлекается из HTTP-запросов
+- [x] Per-session McpServer с токеном пользователя
+- [x] Токен используется для запросов к TravelCode API
+- [x] Примечание: токены opaque, валидируются TravelCode API (не JWKS)
 
-**Вариант C — Свой минимальный AS:**
-- [ ] `/authorize` — генерация authorization code
-- [ ] `/token` — обмен code на access_token
-- [ ] Поддержка PKCE (S256)
-- [ ] Dynamic Client Registration или Client ID Metadata Documents
-
-### Фаза 4: Token validation в MCP-сервере
-- [ ] Middleware для проверки Bearer token на каждый запрос
-- [ ] Проверка audience (resource indicator) — токен выдан именно для нашего сервера
-- [ ] Проверка scopes — достаточно прав для запрашиваемого tool
-- [ ] Обмен внешнего токена на внутренний TravelCode API token (НЕ passthrough!)
-
-### Фаза 5: Graceful fallback
-- [ ] Stdio транспорт: env-токен работает как раньше
-- [ ] HTTP транспорт: OAuth-флоу
+### Фаза 5: Graceful fallback ✅
+- [x] Stdio транспорт: env-токен работает как раньше (`npm start`)
+- [x] HTTP транспорт: OAuth-флоу (`npm run start:http`)
 - [ ] CLI-команда `auth` для интерактивного получения токена
 
 ## Важные требования из MCP OAuth spec
@@ -142,10 +137,10 @@ MCP OAuth 2.1 spec полностью применяется. MCP-клиент (
 ### MCP SDK поддержка
 `@modelcontextprotocol/sdk` уже имеет `StreamableHTTPServerTransport` — использовать его.
 
-## Открытые вопросы
-1. Поддерживает ли TravelCode API OAuth? Какие эндпоинты?
-2. Если нет OAuth — использовать Auth0/WorkOS или делать свой AS?
-3. Нужен ли client_id/client_secret или достаточно PKCE (public client)?
-4. Какие scopes нужны?
-5. Где будет хостится HTTP MCP-сервер? (localhost / cloud)
-6. Нужно ли поддерживать несколько пользователей?
+## Закрытые вопросы
+1. ✅ TravelCode API поддерживает OAuth — полный AS реализован
+2. ✅ TravelCode сам AS — не нужен Auth0/WorkOS
+3. ✅ Public client (token_endpoint_auth_method: "none") + PKCE S256
+4. ✅ Scopes: flights:search, flights:status, flights:stats, airports:read, airlines:read
+5. ⏳ Где хостится HTTP MCP-сервер — пока localhost, деплой TBD
+6. ✅ Да, per-session серверы с индивидуальным токеном каждого пользователя

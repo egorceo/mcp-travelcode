@@ -284,9 +284,205 @@ export interface AeroAirportDelayStats {
   arrivals?: AeroAirportDelayInfo;
 }
 
+// --- Orders ---
+
+export interface OrderShort {
+  orderId: number;
+  code: string;
+  status: string;
+  totalPrice: number;
+  currency: string;
+  paymentStatus: string;
+  createdAt: string | null;
+}
+
+export interface OrderList {
+  items: OrderShort[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface OrderPassenger {
+  id: number;
+  firstName: string;
+  lastName: string;
+  type: string;
+}
+
+export interface OrderService {
+  id: number;
+  type: string;
+  title: string;
+  status: string;
+  date: string;
+  priceGross: number;
+  priceNet: number;
+  ticketNumber?: string;
+  pnr?: string;
+}
+
+export interface OrderTicket {
+  ticketNumber: string;
+  serviceId: number;
+  type: string;
+  status: string;
+}
+
+export interface OrderFull {
+  orderId: number;
+  code: string;
+  status: string;
+  totalPrice: number;
+  currency: string;
+  passengers: OrderPassenger[];
+  services: OrderService[];
+  tickets?: OrderTicket[];
+  paymentStatus: string;
+  ticketingDeadline: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CancelCheckRefund {
+  estimatedAmount: number;
+  penalty: number;
+  currency: string;
+  type: string;
+}
+
+export interface CancelCheckResponse {
+  cancellable: boolean;
+  refund?: CancelCheckRefund | null;
+  deadline?: string | null;
+  rules?: string | null;
+}
+
+export interface CancelResultRefund {
+  amount: number;
+  currency: string;
+  type: string;
+  penalty: number;
+}
+
+export interface CancelResult {
+  orderId: number;
+  status: string;
+  cancelledAt: string | null;
+  refund?: CancelResultRefund | null;
+}
+
+export interface ModifyCheckService {
+  serviceId: number;
+  title: string;
+  allowedChanges: string[];
+}
+
+export interface ModifyCheckResponse {
+  modifiable: boolean;
+  services?: ModifyCheckService[];
+}
+
+export interface ModifyResult {
+  orderId: number;
+  status: string;
+}
+
+// --- Hotels ---
+
+export interface HotelLocationChild {
+  id: string | number;
+  partner: string;
+  name: string;
+  address: string;
+  countryCode: string;
+}
+
+export interface HotelLocationGroup {
+  type: string; // "region" | "hotel"
+  text: string;
+  children: HotelLocationChild[];
+}
+
+export interface HotelLocationSearchResponse {
+  items: HotelLocationGroup[];
+  time: number;
+}
+
+export interface HotelLocationDetail {
+  id: number;
+  nameRu: string;
+  nameEn: string;
+  entityType: string; // "city" | "region" | "hotel"
+}
+
+export interface HotelLocationDetailResponse {
+  result: HotelLocationDetail;
+}
+
+export interface HotelRoomGuests {
+  adults: number;
+  children?: number;
+  childrenAges?: number[];
+}
+
+export interface HotelSearchFilter {
+  minPrice?: number;
+  maxPrice?: number;
+  starRating?: number[];
+  boards?: string[];
+  payments?: string[];
+}
+
+export interface HotelOffer {
+  id?: number;
+  name?: string;
+  stars?: number;
+  address?: string;
+  image?: string;
+  price?: number;
+  currency?: string;
+  board?: string;
+  boardName?: string;
+  rooms?: number;
+  cancellation?: string;
+  [key: string]: unknown;
+}
+
+export interface HotelSSEConnected {
+  status: string;
+  cached?: boolean;
+}
+
+export interface HotelSSEHotelsBatch {
+  batch: number;
+  count: number;
+  hotels: HotelOffer[];
+}
+
+export interface HotelSSESortedBatch {
+  count: number;
+  total: number;
+  chunk: number;
+  hotels: HotelOffer[];
+}
+
+export interface HotelSSECount {
+  batch: number;
+  count: number;
+  total: number;
+}
+
+export interface HotelSSECompleted {
+  count: number;
+  hotels: HotelOffer[];
+  cacheKey: string;
+}
+
 // --- Errors ---
 
 export interface ApiErrorResponse {
   code: number;
-  message: string;
+  message?: string;
+  text?: string;
 }

@@ -1,8 +1,38 @@
 # MCP TravelCode
 
-MCP server for the [TravelCode](https://travel-code.com) corporate travel API. Enables AI assistants (Claude Desktop, Cursor, Claude Code) to search flights, track flight status, check delays, look up airports, and find airlines.
+MCP server for the [TravelCode](https://travel-code.com) corporate travel API. Enables AI assistants (Claude Desktop, Cursor, Claude Code) to search flights & hotels, manage bookings, and track flight status.
 
-## Tools
+## Quick Start
+
+```bash
+# 1. Authenticate (opens browser, one-time)
+npx mcp-travelcode-auth auth
+
+# 2. Add to Claude Desktop (claude_desktop_config.json):
+```
+
+```json
+{
+  "mcpServers": {
+    "travelcode": {
+      "command": "npx",
+      "args": ["mcp-travelcode"]
+    }
+  }
+}
+```
+
+```bash
+# 3. Restart Claude Desktop — done!
+```
+
+### Claude Code
+
+```bash
+claude mcp add travelcode -- npx mcp-travelcode
+```
+
+## Tools (19)
 
 ### Flight Search & Reference Data
 
@@ -23,97 +53,81 @@ MCP server for the [TravelCode](https://travel-code.com) corporate travel API. E
 | `get_flight_delay_stats` | Historical delay statistics for a flight number |
 | `get_airport_delay_stats` | Airport delay and cancellation stats for a date |
 
-## Setup
+### Hotel Search
 
-### 1. Install
+| Tool | Description |
+|------|-------------|
+| `search_hotel_locations` | Find cities, regions, or hotels by name (returns location IDs) |
+| `get_hotel_location` | Get location details by ID |
+| `search_hotels` | Search hotels with filters (stars, price, meal plan, refundability) via SSE stream |
 
-```bash
-npm install -g mcp-travelcode
-```
+### Order Management
 
-Or clone and build locally:
+| Tool | Description |
+|------|-------------|
+| `list_orders` | List orders with filtering and pagination |
+| `get_order` | Get full order details |
+| `create_order` | Book a flight from search results |
+| `check_order_cancellation` | Check cancellation conditions and refund estimate |
+| `cancel_order` | Cancel an order |
+| `check_order_modification` | Check what modifications are allowed |
+| `modify_order` | Modify an order (contacts, passport, rebook, baggage) |
 
-```bash
-git clone <repo-url>
-cd mcp-travelcode
-npm install
-npm run build
-```
+## Authentication
 
-### 2. Get your API token
-
-Log in to the TravelCode platform and generate an API token for your account.
-
-### 3. Configure in Claude Desktop
-
-Add to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "travelcode": {
-      "command": "node",
-      "args": ["/path/to/mcp-travelcode/build/index.js"],
-      "env": {
-        "TRAVELCODE_API_BASE_URL": "https://api.travel-code.com/v1",
-        "TRAVELCODE_API_TOKEN": "your-token-here"
-      }
-    }
-  }
-}
-```
-
-### 4. Configure in Claude Code
+MCP TravelCode uses OAuth 2.1 with PKCE. No API keys to manage — just sign in with your TravelCode account.
 
 ```bash
-claude mcp add travelcode -- node /path/to/mcp-travelcode/build/index.js
+# Sign in (opens browser)
+npx mcp-travelcode-auth auth
+
+# Check token status
+npx mcp-travelcode-auth status
+
+# Sign out
+npx mcp-travelcode-auth logout
 ```
 
-Set environment variables `TRAVELCODE_API_BASE_URL` and `TRAVELCODE_API_TOKEN` in your shell.
+Tokens are stored in `~/.travelcode/tokens.json` and auto-refresh when expired.
+
+**Legacy mode:** You can also set `TRAVELCODE_API_TOKEN` environment variable to use a static API token.
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `TRAVELCODE_API_BASE_URL` | Yes | — | API base URL |
-| `TRAVELCODE_API_TOKEN` | Yes | — | Bearer token from TravelCode platform |
+| `TRAVELCODE_API_TOKEN` | No | — | Static API token (skips OAuth) |
+| `TRAVELCODE_API_BASE_URL` | No | `https://api.travel-code.com/v1` | API base URL |
 | `TRAVELCODE_POLL_INTERVAL_MS` | No | 2000 | Flight search polling interval (ms) |
 | `TRAVELCODE_POLL_TIMEOUT_MS` | No | 90000 | Flight search timeout (ms) |
+
+## Example Conversations
+
+> "Find hotels in Dubai for April 15-18, 2 adults, 4-5 stars, all inclusive"
+
+Uses `search_hotel_locations` → `search_hotels` with star rating and meal plan filters.
+
+> "Search flights from London to Barcelona on March 15, economy, 2 adults"
+
+Uses `search_airports` → `search_flights` → returns formatted flight options.
+
+> "Show my orders" / "Cancel order 12345"
+
+Uses `list_orders`, `check_order_cancellation` → `cancel_order`.
+
+> "Is flight LO776 on time today?"
+
+Uses `get_flight_status` to check real-time status.
 
 ## Development
 
 ```bash
-npm run dev       # Run with tsx (hot reload)
-npm run build     # Compile TypeScript
-npm run inspect   # Test with MCP Inspector
+npm run dev         # Run with tsx (hot reload)
+npm run build       # Compile TypeScript
+npm run inspect     # Test with MCP Inspector
+npm run start:http  # Run HTTP transport (OAuth for browser clients)
 ```
 
-## Example Conversation
+## License
 
-> "Find airports in London"
-
-Uses `search_airports` to return LHR, LGW, STN, etc.
-
-> "Search flights from LHR to BCN on March 15, economy, 2 adults"
-
-Uses `search_flights` — creates search, polls for results, returns formatted flight options.
-
-> "Show only direct flights from those results"
-
-Uses `get_flight_results` with the cache ID from the previous search.
-
-> "Is flight LO776 on time today?"
-
-Uses `get_flight_status` to check real-time status, delays, gates, terminals.
-
-> "Show departures from WAW in the next 3 hours"
-
-Uses `get_airport_flights` to display the departure board.
-
-> "Is LO776 usually on time?"
-
-Uses `get_flight_delay_stats` to show historical delay patterns.
-
-> "Are there delays at Heathrow today?"
-
-Uses `get_airport_delay_stats` to assess current airport situation.
+MIT

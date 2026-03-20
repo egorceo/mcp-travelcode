@@ -1,4 +1,5 @@
 import { TravelCodeConfig } from "../config.js";
+import { getValidToken } from "../auth/token-store.js";
 import { ApiErrorResponse } from "./types.js";
 
 export class TravelCodeAuthError extends Error {
@@ -32,13 +33,28 @@ export class TravelCodeServerError extends Error {
 export class TravelCodeApiClient {
   private baseUrl: string;
   private token: string;
+  private issuer: string;
 
   constructor(config: TravelCodeConfig) {
     this.baseUrl = config.apiBaseUrl;
     this.token = config.apiToken;
+    this.issuer = config.oauthIssuer ?? "";
+  }
+
+  /**
+   * Ensures the token is still valid, refreshing via OAuth if needed.
+   * Falls back to the current token if refresh is not available.
+   */
+  private async ensureValidToken(): Promise<void> {
+    if (!this.issuer) return; // static token, no refresh
+    const freshToken = await getValidToken(this.issuer);
+    if (freshToken) {
+      this.token = freshToken;
+    }
   }
 
   async get<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
+    await this.ensureValidToken();
     const url = new URL(`${this.baseUrl}${path}`);
 
     if (params) {
@@ -57,14 +73,18 @@ export class TravelCodeApiClient {
     return this.handleResponse<T>(response);
   }
 
-  async post<T>(path: string, body: unknown): Promise<T> {
+  async post<T>(path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
+    await this.ensureValidToken();
+    const headers: Record<string, string> = {
+      ...this.headers(),
+      "Content-Type": "application/json",
+      ...extraHeaders,
+    };
+
     const response = await fetch(`${this.baseUrl}${path}`, {
       method: "POST",
-      headers: {
-        ...this.headers(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
     return this.handleResponse<T>(response);
@@ -74,6 +94,7 @@ export class TravelCodeApiClient {
     aerodataboxPath: string,
     params?: Record<string, string | number | boolean | undefined>
   ): Promise<T> {
+    await this.ensureValidToken();
     // Build the AeroDataBox path with query params
     const pathUrl = new URL(`https://placeholder${aerodataboxPath}`);
     if (params) {
@@ -98,6 +119,119 @@ export class TravelCodeApiClient {
     return this.handleResponse<T>(response);
   }
 
+  /**
+   * POST request that returns an SSE stream.
+   * Collects events and returns them as an array of {event, data} objects.
+   */
+  async postSSE(
+    path: string,
+    body: Record<string, unknown>,
+    timeoutMs: number = 130_000
+  ): Promise<Array<{ event: string; data: unknown }>> {
+    await this.ensureValidToken();
+
+    // Hotels API uses accessToken in body, not Bearer header
+    const bodyWithToken = { ...body, accessToken: this.token };
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(`${this.baseUrl}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Source": "mcp-server",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify(bodyWithToken),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        let errorMessage: string;
+        try {
+          const errorBody = (await response.json()) as ApiErrorResponse;
+          errorMessage = errorBody.message || errorBody.text || `HTTP ${response.status}`;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        if (response.status === 401) throw new TravelCodeAuthError(errorMessage);
+        if (response.status === 404) throw new TravelCodeNotFoundError(errorMessage);
+        if (response.status >= 500) throw new TravelCodeServerError(errorMessage);
+        throw new Error(`API error: ${errorMessage}`);
+      }
+
+      if (!response.body) {
+        throw new Error("No response body for SSE stream");
+      }
+
+      const events: Array<{ event: string; data: unknown }> = [];
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const raw = line.slice(6);
+            try {
+              const data = JSON.parse(raw);
+              events.push({ event: currentEvent, data });
+
+              // Stop reading after terminal events
+              if (currentEvent === "completed" || currentEvent === "error" || currentEvent === "timeout") {
+                reader.cancel();
+                return events;
+              }
+            } catch {
+              // skip malformed JSON lines
+            }
+          }
+        }
+      }
+
+      return events;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
+   * GET with accessToken as query parameter (used by hotel location endpoints).
+   */
+  async getWithTokenParam<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
+    await this.ensureValidToken();
+    const allParams = { ...params, accessToken: this.token };
+    const url = new URL(`${this.baseUrl}${path}`);
+
+    for (const [key, value] of Object.entries(allParams)) {
+      if (value !== undefined) {
+        url.searchParams.set(key, String(value));
+      }
+    }
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "X-Source": "mcp-server",
+        Accept: "application/json",
+      },
+    });
+
+    return this.handleResponse<T>(response);
+  }
+
   private headers(): Record<string, string> {
     return {
       Authorization: `Bearer ${this.token}`,
@@ -114,7 +248,7 @@ export class TravelCodeApiClient {
     let errorMessage: string;
     try {
       const errorBody = (await response.json()) as ApiErrorResponse;
-      errorMessage = errorBody.message || `HTTP ${response.status}`;
+      errorMessage = errorBody.message || errorBody.text || `HTTP ${response.status}`;
     } catch {
       errorMessage = `HTTP ${response.status}: ${response.statusText}`;
     }

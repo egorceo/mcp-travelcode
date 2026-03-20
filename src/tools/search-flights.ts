@@ -3,8 +3,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TravelCodeApiClient } from "../client/api-client.js";
 import { TravelCodeConfig } from "../config.js";
 import { FlightSearchRequest } from "../client/types.js";
-import { executeFlightSearch } from "../polling/flight-poller.js";
+import { executeFlightSearch, type ProgressCallback } from "../polling/flight-poller.js";
 import { formatFlightResults } from "../formatters/flight-formatter.js";
+import type { ServerNotification } from "@modelcontextprotocol/sdk/types.js";
 
 function convertDate(isoDate: string): string {
   // YYYY-MM-DD → DD.MM.YYYY
@@ -35,7 +36,7 @@ export function registerSearchFlights(server: McpServer, client: TravelCodeApiCl
     "search_flights",
     "Search for flights between two airports. Handles the full search process including waiting for results from multiple airline sources. May take 15-60 seconds. For round-trip, provide both departure and return dates. Returns top results sorted by price with a cache ID for follow-up filtering.",
     searchFlightsSchema,
-    async ({ origin, destination, departure_date, return_date, cabin_class, adults, children, infants, preferred_airlines }) => {
+    async ({ origin, destination, departure_date, return_date, cabin_class, adults, children, infants, preferred_airlines }, extra) => {
       try {
         const searchParams: FlightSearchRequest = {
           locationFrom: origin.toUpperCase(),
@@ -52,7 +53,19 @@ export function registerSearchFlights(server: McpServer, client: TravelCodeApiCl
           searchParams.airlines = preferred_airlines.map((a) => a.toUpperCase());
         }
 
-        const result = await executeFlightSearch(client, searchParams, config);
+        // Build progress callback using MCP progress notifications
+        const progressToken = extra._meta?.progressToken;
+        let onProgress: ProgressCallback | undefined;
+        if (progressToken !== undefined) {
+          onProgress = async (progress: number, total: number, message: string) => {
+            await extra.sendNotification({
+              method: "notifications/progress",
+              params: { progressToken, progress, total, message },
+            } as ServerNotification);
+          };
+        }
+
+        const result = await executeFlightSearch(client, searchParams, config, onProgress);
 
         // Build passengers description
         const parts: string[] = [];
