@@ -1,12 +1,12 @@
 {
   "name": "mcp-travelcode",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for TravelCode — flights, hotels, orders. Search flights & hotels, manage bookings via AI assistants.",
   "type": "module",
   "main": "./build/index.js",
   "bin": {
-    "mcp-travelcode": "./build/index.js",
-    "mcp-travelcode-auth": "./build/auth/cli-auth.js"
+    "mcp-travelcode": "build/index.js",
+    "mcp-travelcode-auth": "build/auth/cli-auth.js"
   },
   "files": [
     "build/**/*.js",
@@ -25,7 +25,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/egorceo/mcp-travelcode"
+    "url": "git+https://github.com/egorceo/mcp-travelcode.git"
   },
   "scripts": {
     "prepublishOnly": "npm run build",
