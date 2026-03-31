@@ -20,6 +20,7 @@ import { registerModifyOrder } from "./tools/modify-order.js";
 import { registerSearchHotelLocations } from "./tools/search-hotel-locations.js";
 import { registerGetHotelLocation } from "./tools/get-hotel-location.js";
 import { registerSearchHotels } from "./tools/search-hotels.js";
+import { registerGetHotelOffers } from "./tools/get-hotel-offers.js";
 
 export function createServer(config: TravelCodeConfig): McpServer {
   const server = new McpServer({
@@ -57,6 +58,7 @@ export function createServer(config: TravelCodeConfig): McpServer {
   registerSearchHotelLocations(server, client);
   registerGetHotelLocation(server, client);
   registerSearchHotels(server, client);
+  registerGetHotelOffers(server, client);
 
   return server;
 }

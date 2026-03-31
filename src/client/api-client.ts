@@ -232,6 +232,26 @@ export class TravelCodeApiClient {
     return this.handleResponse<T>(response);
   }
 
+  /**
+   * POST with accessToken in body (used by hotel offers endpoint).
+   */
+  async postWithTokenParam<T>(path: string, body: Record<string, unknown>): Promise<T> {
+    await this.ensureValidToken();
+    const bodyWithToken = { ...body, accessToken: this.token };
+
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Source": "mcp-server",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(bodyWithToken),
+    });
+
+    return this.handleResponse<T>(response);
+  }
+
   private headers(): Record<string, string> {
     return {
       Authorization: `Bearer ${this.token}`,

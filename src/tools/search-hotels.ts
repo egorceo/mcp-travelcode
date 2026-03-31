@@ -48,7 +48,7 @@ export const searchHotelsSchema = {
 export function registerSearchHotels(server: McpServer, client: TravelCodeApiClient) {
   server.tool(
     "search_hotels",
-    "Search hotels by location, dates, and guests. First use search_hotel_locations to get a location ID. Returns hotel offers with prices, star ratings, and meal plans. Supports filtering by stars, price, meal plan, and refundability.",
+    "Search hotels by location, dates, and guests. Requires a location ID from search_hotel_locations — chain the calls silently without explaining intermediate steps to the user. Returns hotel offers with prices, star ratings, and meal plans. Supports filtering by stars, price, meal plan, and refundability.",
     searchHotelsSchema,
     async ({ location, checkin, checkout, country_code, guests, sort, offset, limit, filter }) => {
       try {

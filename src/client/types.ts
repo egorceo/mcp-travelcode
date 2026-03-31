@@ -479,6 +479,79 @@ export interface HotelSSECompleted {
   cacheKey: string;
 }
 
+// --- Hotel Offers (single hotel detail) ---
+
+export interface HotelOfferPrice {
+  currency: string;
+  net: number;
+  gross: number;
+  total: number;
+  markup: number;
+  nights: number;
+  rooms: number;
+  nightly: number;
+  extra?: number;
+  totalWithExtra?: number;
+  deposit?: number | null;
+}
+
+export interface HotelOfferCancelPolicy {
+  refundable: boolean;
+  title: string;
+  description?: string;
+  fullyRefundable: boolean;
+}
+
+export interface HotelOfferRoom {
+  occupancyRefId: number;
+  code: string;
+  description: string;
+}
+
+export interface HotelOfferRate {
+  partnerId: number;
+  boardName: string;
+  price: HotelOfferPrice;
+  cancelPolicy: HotelOfferCancelPolicy;
+  rooms: HotelOfferRoom[];
+  externalId: string;
+  quoteKey: string;
+}
+
+export interface HotelOfferRoomGroup {
+  content: {
+    area?: string | null;
+    views?: string | null;
+    photos?: string[];
+  };
+  rates: HotelOfferRate[];
+}
+
+export interface HotelPropertyDescription {
+  title: string;
+  text: string;
+}
+
+export interface HotelProperty {
+  id?: string;
+  gId?: number;
+  name: string;
+  starRating?: number;
+  address?: string;
+  heroImage?: string;
+  images?: Array<{ url: string }>;
+  description?: HotelPropertyDescription[];
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface HotelOffersResponse {
+  offersKey: string;
+  property: HotelProperty;
+  offers: Record<string, HotelOfferRoomGroup>;
+  bronevikId?: number;
+}
+
 // --- Errors ---
 
 export interface ApiErrorResponse {

@@ -1,6 +1,7 @@
 import {
   HotelLocationSearchResponse,
   HotelOffer,
+  HotelOffersResponse,
 } from "../client/types.js";
 
 export function formatHotelLocations(data: HotelLocationSearchResponse): string {
@@ -61,6 +62,64 @@ export function formatHotelResults(hotels: HotelOffer[], totalCount: number): st
     if (tags) lines.push(`  ${tags}`);
     lines.push("");
   }
+
+  return lines.join("\n");
+}
+
+export function formatHotelOffers(data: HotelOffersResponse): string {
+  const prop = data.property;
+  const stars = prop.starRating ? "★".repeat(prop.starRating) : "";
+  const lines: string[] = [
+    `${stars} ${prop.name}`,
+    prop.address ? `Address: ${prop.address}` : "",
+  ].filter(Boolean);
+
+  // Descriptions
+  if (prop.description && prop.description.length > 0) {
+    for (const desc of prop.description.slice(0, 2)) {
+      const text = desc.text.length > 200 ? desc.text.slice(0, 200) + "..." : desc.text;
+      lines.push(`${desc.title}: ${text}`);
+    }
+  }
+
+  const roomGroups = Object.entries(data.offers);
+  let totalRates = 0;
+  for (const [, group] of roomGroups) {
+    totalRates += group.rates.length;
+  }
+
+  lines.push("");
+  lines.push(`${roomGroups.length} room types, ${totalRates} rates total:`);
+  lines.push("");
+
+  for (const [roomName, group] of roomGroups) {
+    const cheapest = group.rates.reduce(
+      (min, r) => (r.price.nightly < min.price.nightly ? r : min),
+      group.rates[0]
+    );
+    if (!cheapest) continue;
+
+    const refundable = group.rates.some((r) => r.cancelPolicy.refundable);
+    const boards = [...new Set(group.rates.map((r) => r.boardName))].join(", ");
+
+    lines.push(`--- ${roomName} (${group.rates.length} offers) ---`);
+    lines.push(`  From: ${cheapest.price.nightly} ${cheapest.price.currency}/night (total: ${cheapest.price.total} for ${cheapest.price.nights} night(s))`);
+    lines.push(`  Meal options: ${boards}`);
+    lines.push(`  ${refundable ? "Refundable options available" : "Non-refundable"}`);
+
+    // Show top 3 rates
+    const sorted = [...group.rates].sort((a, b) => a.price.nightly - b.price.nightly);
+    for (const rate of sorted.slice(0, 3)) {
+      const cancel = rate.cancelPolicy.refundable ? "Refundable" : "Non-refundable";
+      lines.push(`    ${rate.price.nightly} ${rate.price.currency}/night | ${rate.boardName} | ${cancel}`);
+    }
+    if (sorted.length > 3) {
+      lines.push(`    ... and ${sorted.length - 3} more offers`);
+    }
+    lines.push("");
+  }
+
+  lines.push(`offersKey: ${data.offersKey}`);
 
   return lines.join("\n");
 }
