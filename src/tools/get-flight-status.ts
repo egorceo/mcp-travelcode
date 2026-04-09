@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TravelCodeApiClient } from "../client/api-client.js";
-import { AeroFlightStatusResponse } from "../client/types.js";
-import { formatFlightStatus } from "../formatters/aerodatabox-formatter.js";
+import { FlightStatusResponse } from "../client/types.js";
+import { formatFlightStatus } from "../formatters/flight-stats-formatter.js";
 
 export const getFlightStatusSchema = {
   flight_number: z
@@ -29,7 +29,7 @@ export function registerGetFlightStatus(server: McpServer, client: TravelCodeApi
     async ({ flight_number, date, with_aircraft_image, with_location }) => {
       try {
         const normalized = flight_number.replace(/\s+/g, "").toUpperCase();
-        const flights = await client.getAerodatabox<AeroFlightStatusResponse>(
+        const flights = await client.getFlightStats<FlightStatusResponse>(
           `/flights/number/${encodeURIComponent(normalized)}/${date}`,
           {
             withAircraftImage: with_aircraft_image,

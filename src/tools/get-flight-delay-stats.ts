@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TravelCodeApiClient } from "../client/api-client.js";
-import { AeroFlightDelayStats } from "../client/types.js";
-import { formatFlightDelayStats } from "../formatters/aerodatabox-formatter.js";
+import { FlightDelayStats } from "../client/types.js";
+import { formatFlightDelayStats } from "../formatters/flight-stats-formatter.js";
 
 export const getFlightDelayStatsSchema = {
   flight_number: z
@@ -18,7 +18,7 @@ export function registerGetFlightDelayStats(server: McpServer, client: TravelCod
     async ({ flight_number }) => {
       try {
         const normalized = flight_number.replace(/\s+/g, "").toUpperCase();
-        const stats = await client.getAerodatabox<AeroFlightDelayStats>(
+        const stats = await client.getFlightStats<FlightDelayStats>(
           `/flights/${encodeURIComponent(normalized)}/delays`
         );
 

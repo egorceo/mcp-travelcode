@@ -90,13 +90,13 @@ export class TravelCodeApiClient {
     return this.handleResponse<T>(response);
   }
 
-  async getAerodatabox<T>(
-    aerodataboxPath: string,
+  async getFlightStats<T>(
+    subPath: string,
     params?: Record<string, string | number | boolean | undefined>
   ): Promise<T> {
     await this.ensureValidToken();
-    // Build the AeroDataBox path with query params
-    const pathUrl = new URL(`https://placeholder${aerodataboxPath}`);
+    // Build the inner path with query params
+    const pathUrl = new URL(`https://placeholder${subPath}`);
     if (params) {
       for (const [key, value] of Object.entries(params)) {
         if (value !== undefined) {
@@ -104,12 +104,11 @@ export class TravelCodeApiClient {
         }
       }
     }
-    const fullAeroPath = pathUrl.pathname + pathUrl.search;
+    const fullPath = pathUrl.pathname + pathUrl.search;
 
-    // Proxy URL: strip /v1 from base URL, route through /flight/aerodatabox
-    const proxyBaseUrl = this.baseUrl.replace(/\/v1\/?$/, "");
-    const proxyUrl = new URL(`${proxyBaseUrl}/flight/aerodatabox`);
-    proxyUrl.searchParams.set("path", fullAeroPath);
+    // Route through the TravelCode flight stats proxy endpoint
+    const proxyUrl = new URL(`${this.baseUrl}/flight/aerostats`);
+    proxyUrl.searchParams.set("path", fullPath);
 
     const response = await fetch(proxyUrl.toString(), {
       method: "GET",

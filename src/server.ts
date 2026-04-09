@@ -39,7 +39,7 @@ export function createServer(config: TravelCodeConfig): McpServer {
   registerSearchFlights(server, client, config);
   registerGetFlightResults(server, client);
 
-  // Flight statistics tools (AeroDataBox)
+  // Flight statistics tools
   registerGetFlightStatus(server, client);
   registerGetAirportFlights(server, client);
   registerGetFlightDelayStats(server, client);

@@ -150,14 +150,14 @@ export interface FlightSearchResultsResponse {
   };
 }
 
-// --- AeroDataBox: Flight Status ---
+// --- Flight Status ---
 
-export interface AeroFlightTime {
+export interface FlightTime {
   utc?: string;
   local?: string;
 }
 
-export interface AeroFlightEndpoint {
+export interface FlightEndpoint {
   airport?: {
     icao?: string;
     iata?: string;
@@ -167,10 +167,10 @@ export interface AeroFlightEndpoint {
     location?: { lat?: number; lon?: number };
     countryCode?: string;
   };
-  scheduledTime?: AeroFlightTime;
-  revisedTime?: AeroFlightTime;
-  predictedTime?: AeroFlightTime;
-  actualTime?: AeroFlightTime;
+  scheduledTime?: FlightTime;
+  revisedTime?: FlightTime;
+  predictedTime?: FlightTime;
+  actualTime?: FlightTime;
   terminal?: string;
   gate?: string;
   baggageBelt?: string;
@@ -178,7 +178,7 @@ export interface AeroFlightEndpoint {
   quality?: string[];
 }
 
-export interface AeroFlightAircraft {
+export interface FlightAircraft {
   reg?: string;
   modeS?: string;
   model?: string;
@@ -191,11 +191,11 @@ export interface AeroFlightAircraft {
   };
 }
 
-export interface AeroFlightStatus {
+export interface FlightStatus {
   type?: string;
   status?: string;
-  departure: AeroFlightEndpoint;
-  arrival: AeroFlightEndpoint;
+  departure: FlightEndpoint;
+  arrival: FlightEndpoint;
   number?: string;
   callSign?: string;
   airline?: {
@@ -203,7 +203,7 @@ export interface AeroFlightStatus {
     iata?: string;
     icao?: string;
   };
-  aircraft?: AeroFlightAircraft;
+  aircraft?: FlightAircraft;
   location?: {
     pressureAltFt?: number;
     gsKt?: number;
@@ -219,13 +219,13 @@ export interface AeroFlightStatus {
   };
 }
 
-export type AeroFlightStatusResponse = AeroFlightStatus[];
+export type FlightStatusResponse = FlightStatus[];
 
-// --- AeroDataBox: Airport Flights Board ---
+// --- Airport Flights Board ---
 
-export interface AeroBoardFlight {
-  departure: AeroFlightEndpoint;
-  arrival: AeroFlightEndpoint;
+export interface BoardFlight {
+  departure: FlightEndpoint;
+  arrival: FlightEndpoint;
   number?: string;
   status?: string;
   codeshareStatus?: string;
@@ -241,14 +241,14 @@ export interface AeroBoardFlight {
   };
 }
 
-export interface AeroAirportBoardResponse {
-  departures?: AeroBoardFlight[];
-  arrivals?: AeroBoardFlight[];
+export interface AirportBoardResponse {
+  departures?: BoardFlight[];
+  arrivals?: BoardFlight[];
 }
 
-// --- AeroDataBox: Flight Delay Statistics ---
+// --- Flight Delay Statistics ---
 
-export interface AeroFlightDelayStats {
+export interface FlightDelayStats {
   route?: {
     from?: string;
     to?: string;
@@ -264,9 +264,9 @@ export interface AeroFlightDelayStats {
   observations?: number;
 }
 
-// --- AeroDataBox: Airport Delay Statistics ---
+// --- Airport Delay Statistics ---
 
-export interface AeroAirportDelayInfo {
+export interface AirportDelayInfo {
   averageDelayMin?: number;
   delayIndex?: number;
   medianDelayMin?: number;
@@ -274,14 +274,14 @@ export interface AeroAirportDelayInfo {
   totalFlights?: number;
 }
 
-export interface AeroAirportDelayStats {
+export interface AirportDelayStats {
   airport?: {
     iata?: string;
     name?: string;
   };
   date?: string;
-  departures?: AeroAirportDelayInfo;
-  arrivals?: AeroAirportDelayInfo;
+  departures?: AirportDelayInfo;
+  arrivals?: AirportDelayInfo;
 }
 
 // --- Orders ---

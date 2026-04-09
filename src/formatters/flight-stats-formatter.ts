@@ -1,14 +1,14 @@
 import {
-  AeroFlightStatus,
-  AeroFlightEndpoint,
-  AeroBoardFlight,
-  AeroFlightDelayStats,
-  AeroAirportDelayStats,
+  FlightStatus,
+  FlightEndpoint,
+  BoardFlight,
+  FlightDelayStats,
+  AirportDelayStats,
 } from "../client/types.js";
 
 // --- Helpers ---
 
-function extractLocalTime(endpoint: AeroFlightEndpoint): string | undefined {
+function extractLocalTime(endpoint: FlightEndpoint): string | undefined {
   const time =
     endpoint.actualTime?.local ||
     endpoint.revisedTime?.local ||
@@ -20,21 +20,21 @@ function extractLocalTime(endpoint: AeroFlightEndpoint): string | undefined {
   return match ? match[1] : time;
 }
 
-function extractScheduledTime(endpoint: AeroFlightEndpoint): string | undefined {
+function extractScheduledTime(endpoint: FlightEndpoint): string | undefined {
   const time = endpoint.scheduledTime?.local;
   if (!time) return undefined;
   const match = time.match(/T(\d{2}:\d{2})/);
   return match ? match[1] : time;
 }
 
-function airportLabel(endpoint: AeroFlightEndpoint): string {
+function airportLabel(endpoint: FlightEndpoint): string {
   const iata = endpoint.airport?.iata || "";
   const name = endpoint.airport?.shortName || endpoint.airport?.name || endpoint.airport?.municipalityName || "";
   if (iata && name) return `${name} (${iata})`;
   return iata || name || "Unknown";
 }
 
-function delayText(endpoint: AeroFlightEndpoint): string {
+function delayText(endpoint: FlightEndpoint): string {
   const scheduled = endpoint.scheduledTime?.local;
   const actual = endpoint.actualTime?.local || endpoint.revisedTime?.local || endpoint.predictedTime?.local;
   if (!scheduled || !actual) return "";
@@ -49,7 +49,7 @@ function delayText(endpoint: AeroFlightEndpoint): string {
 
 // --- Flight Status ---
 
-function formatOneFlight(flight: AeroFlightStatus): string[] {
+function formatOneFlight(flight: FlightStatus): string[] {
   const lines: string[] = [];
 
   const airline = flight.airline?.name || "";
@@ -114,7 +114,7 @@ function formatOneFlight(flight: AeroFlightStatus): string[] {
   return lines;
 }
 
-export function formatFlightStatus(flights: AeroFlightStatus[], flightNumber: string, date: string): string {
+export function formatFlightStatus(flights: FlightStatus[], flightNumber: string, date: string): string {
   if (!flights || flights.length === 0) {
     return `No flight data found for ${flightNumber} on ${date}. Check the flight number and date.`;
   }
@@ -135,7 +135,7 @@ export function formatFlightStatus(flights: AeroFlightStatus[], flightNumber: st
 // --- Airport Board ---
 
 export function formatAirportBoard(
-  flights: AeroBoardFlight[],
+  flights: BoardFlight[],
   airportCode: string,
   direction: string,
   fromTime: string,
@@ -186,7 +186,7 @@ export function formatAirportBoard(
 
 // --- Flight Delay Statistics ---
 
-export function formatFlightDelayStats(stats: AeroFlightDelayStats, flightNumber: string): string {
+export function formatFlightDelayStats(stats: FlightDelayStats, flightNumber: string): string {
   const lines: string[] = [`Delay statistics: ${flightNumber}`];
 
   if (stats.route?.from && stats.route?.to) {
@@ -242,7 +242,7 @@ export function formatFlightDelayStats(stats: AeroFlightDelayStats, flightNumber
 
 // --- Airport Delay Statistics ---
 
-export function formatAirportDelayStats(stats: AeroAirportDelayStats, airportCode: string, date: string): string {
+export function formatAirportDelayStats(stats: AirportDelayStats, airportCode: string, date: string): string {
   const airportName = stats.airport?.name || airportCode;
   const lines: string[] = [`Airport delay statistics: ${airportName} (${airportCode}) | ${date}\n`];
 

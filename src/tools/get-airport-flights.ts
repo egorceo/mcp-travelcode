@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TravelCodeApiClient } from "../client/api-client.js";
-import { AeroAirportBoardResponse } from "../client/types.js";
-import { formatAirportBoard } from "../formatters/aerodatabox-formatter.js";
+import { AirportBoardResponse } from "../client/types.js";
+import { formatAirportBoard } from "../formatters/flight-stats-formatter.js";
 
 export const getAirportFlightsSchema = {
   airport_code: z
@@ -61,7 +61,7 @@ export function registerGetAirportFlights(server: McpServer, client: TravelCodeA
         }
 
         const code = airport_code.toUpperCase();
-        const board = await client.getAerodatabox<AeroAirportBoardResponse>(
+        const board = await client.getFlightStats<AirportBoardResponse>(
           `/flights/airports/iata/${encodeURIComponent(code)}/${from_time}/${to_time}`,
           {
             withCancellations: true,
