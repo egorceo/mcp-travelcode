@@ -250,18 +250,21 @@ app.all("/mcp", async (req: express.Request, res: express.Response) => {
 
   await server.connect(transport);
 
-  // Store session
+  // Handle the initialization request FIRST — the SDK generates the session
+  // id while processing the initialize method, so transport.sessionId is
+  // undefined until handleRequest completes.
+  await transport.handleRequest(req, res, req.body);
+
+  // Now store the session so subsequent requests carrying the same
+  // Mcp-Session-Id header resolve against it.
   const sid = transport.sessionId;
-  if (sid) {
+  if (sid && !sessions.has(sid)) {
     sessions.set(sid, {
       transport,
       server,
       createdAt: Date.now(),
     });
   }
-
-  // Handle the initialization request
-  await transport.handleRequest(req, res, req.body);
 });
 
 // --- Start ---
