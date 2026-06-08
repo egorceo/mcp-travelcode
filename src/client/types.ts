@@ -1073,3 +1073,10 @@ export interface ApiErrorResponse extends ApiErrorEnvelope {
   // Field-validation shape: { errors: { field: ["msg"] } }
   errors?: Record<string, string[] | string>;
 }
+
+/** Persisted traveler preferences (TravelHub Phase 1: GET /v1/user/preferences). */
+export interface TravelerPreferences {
+  flight: { seat: string | null; meal: string | null; carriers: string[] };
+  hotel: { roomType: string | null; smoking: string | null };
+  special: { dietary: string; accessibility: string[] };
+}
