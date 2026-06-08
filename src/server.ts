@@ -34,6 +34,7 @@ import { registerGetCountryRiskScore } from "./tools/get-country-risk-score.js";
 import { registerGetConflicts } from "./tools/get-conflicts.js";
 import { registerGetAdvisories } from "./tools/get-advisories.js";
 import { registerGetCurrentUser } from "./tools/get-current-user.js";
+import { registerGetTravelerPreferences } from "./tools/get-traveler-preferences.js";
 import { registerListTargetCompanies } from "./tools/list-target-companies.js";
 import { registerGetRateGuardSettings } from "./tools/get-rate-guard-settings.js";
 import { registerUpdateRateGuardSettings } from "./tools/update-rate-guard-settings.js";
@@ -97,6 +98,7 @@ export function createServer(config: TravelCodeConfig): CreatedServer {
 
   // Current user / session
   registerGetCurrentUser(server, client);
+  registerGetTravelerPreferences(server, client);
 
   // Admin impersonation discovery
   registerListTargetCompanies(server, client);
