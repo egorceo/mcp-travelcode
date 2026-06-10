@@ -1074,9 +1074,30 @@ export interface ApiErrorResponse extends ApiErrorEnvelope {
   errors?: Record<string, string[] | string>;
 }
 
-/** Persisted traveler preferences (TravelHub Phase 1: GET /v1/user/preferences). */
+export interface PreferenceFlightDestination {
+  code: string;
+  title: string;
+  titleEn: string;
+  countryTitle: string;
+  countryTitleEn: string;
+}
+
+export interface PreferenceHotelDestination {
+  id: string;
+  partner: string;
+  name: string;
+  nameEn: string;
+  address: string;
+  addressEn: string;
+  countryCode: string;
+}
+
+/** Persisted traveler preferences (TravelHub: GET /v1/user/preferences). */
 export interface TravelerPreferences {
-  flight: { seat: string | null; meal: string | null; carriers: string[] };
-  hotel: { roomType: string | null; smoking: string | null };
+  flight: { seat: string | null; meal: string | null; carriers: string[]; stops?: string | null; timeOfDay?: string | null };
+  hotel: { roomType: string | null; smoking: string | null; board?: string | null };
   special: { dietary: string; accessibility: string[] };
+  searchDefaults?: { nationality?: string | null };
+  destinations?: { flights?: PreferenceFlightDestination[]; hotels?: PreferenceHotelDestination[] };
+  sort?: { flight?: string | null; hotel?: string | null };
 }

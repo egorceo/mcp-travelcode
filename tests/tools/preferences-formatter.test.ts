@@ -40,4 +40,41 @@ describe("formatPreferences", () => {
     };
     expect(formatPreferences(partial)).toBe("Flight seat: window\nDietary: low sodium");
   });
+
+  it("formats the new flight/hotel/search/destination/sort fields", () => {
+    const prefs: TravelerPreferences = {
+      flight: { seat: "window", meal: "regular", carriers: ["FZ"], stops: "nonstop", timeOfDay: "morning" },
+      hotel: { roomType: "king", smoking: "non_smoking", board: "AI" },
+      special: { dietary: "", accessibility: [] },
+      searchDefaults: { nationality: "BY" },
+      destinations: {
+        flights: [
+          { code: "MSQ", title: "Минск", titleEn: "Minsk", countryTitle: "Беларусь", countryTitleEn: "Belarus" },
+          { code: "MOW", title: "Москва", titleEn: "Moscow", countryTitle: "Россия", countryTitleEn: "Russia" },
+        ],
+        hotels: [
+          { id: "608817", partner: "", name: "Минск", nameEn: "Minsk", address: "", addressEn: "", countryCode: "BY" },
+        ],
+      },
+      sort: { flight: "price", hotel: "popular" },
+    };
+    const out = formatPreferences(prefs);
+    expect(out).toContain("Flight stops: nonstop only");
+    expect(out).toContain("Preferred departure time: morning (05:00–09:00)");
+    expect(out).toContain("Hotel meal plan: All inclusive");
+    expect(out).toContain("Default nationality: BY");
+    expect(out).toContain("Frequent flight destinations: Minsk (MSQ), Moscow (MOW)");
+    expect(out).toContain("Frequent hotel destinations: Minsk");
+    expect(out).toContain("Default flight sort: cheapest");
+    expect(out).toContain("Default hotel sort: most popular");
+  });
+
+  it("emits only the present new fields and does not throw on missing ones", () => {
+    const partial: TravelerPreferences = {
+      flight: { seat: null, meal: null, carriers: [], stops: "max_1" },
+      hotel: { roomType: null, smoking: null },
+      special: { dietary: "", accessibility: [] },
+    };
+    expect(formatPreferences(partial)).toBe("Flight stops: max 1 stop");
+  });
 });
