@@ -18,9 +18,10 @@ const STOPS: Record<string, string> = {
   max_2: "max 2 stops",
 };
 const TIME_OF_DAY: Record<string, string> = {
-  morning: "morning (05:00–09:00)",
-  midday: "midday (11:00–16:00)",
-  evening: "evening (17:00–22:00)",
+  morning: "morning (05:00–11:00)",
+  midday: "afternoon (11:00–17:00)",
+  evening: "evening (17:00–23:59)",
+  night: "night (00:00–05:00)",
 };
 const BOARDS: Record<string, string> = {
   RO: "Room only",

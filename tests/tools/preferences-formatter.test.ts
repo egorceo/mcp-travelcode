@@ -60,7 +60,7 @@ describe("formatPreferences", () => {
     };
     const out = formatPreferences(prefs);
     expect(out).toContain("Flight stops: nonstop only");
-    expect(out).toContain("Preferred departure time: morning (05:00–09:00)");
+    expect(out).toContain("Preferred departure time: morning (05:00–11:00)");
     expect(out).toContain("Hotel meal plan: All inclusive");
     expect(out).toContain("Default nationality: BY");
     expect(out).toContain("Frequent flight destinations: Minsk (MSQ), Moscow (MOW)");
