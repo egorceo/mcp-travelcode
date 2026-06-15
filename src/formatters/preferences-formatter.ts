@@ -55,9 +55,6 @@ export function formatPreferences(prefs: TravelerPreferences): string {
     lines.push(`Accessibility: ${special.accessibility.map(humanize).join(", ")}`);
   }
 
-  const nationality = prefs.searchDefaults?.nationality;
-  if (nationality) lines.push(`Default nationality: ${nationality}`);
-
   const flightDests = prefs.destinations?.flights ?? [];
   if (flightDests.length) {
     lines.push(`Frequent flight destinations: ${flightDests.map((d) => `${d.titleEn || d.title} (${d.code})`).join(", ")}`);

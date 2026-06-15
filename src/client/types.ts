@@ -1097,7 +1097,6 @@ export interface TravelerPreferences {
   flight: { seat: string | null; meal: string | null; carriers: string[]; stops?: string | null; timeOfDay?: string | null };
   hotel: { roomType: string | null; smoking: string | null; board?: string | null };
   special: { dietary: string; accessibility: string[] };
-  searchDefaults?: { nationality?: string | null };
   destinations?: { flights?: PreferenceFlightDestination[]; hotels?: PreferenceHotelDestination[] };
   sort?: { flight?: string | null; hotel?: string | null };
 }

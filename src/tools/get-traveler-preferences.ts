@@ -10,11 +10,11 @@ export function registerGetTravelerPreferences(server: McpServer, client: Travel
   server.tool(
     "get_traveler_preferences",
     [
-      "Return the user's saved travel preferences — flight (seat, meal, preferred airlines, stops, departure time), hotel (room type, smoking, meal plan), special needs (dietary, accessibility), default nationality, frequent destinations, and default flight/hotel sort.",
+      "Return the user's saved travel preferences — flight (seat, meal, preferred airlines, stops, departure time), hotel (room type, smoking, meal plan), special needs (dietary, accessibility), frequent destinations, and default flight/hotel sort.",
       "",
       "USER-FACING LANGUAGE: speak about 'your saved preferences'. Never quote internal keys, REST routes, or error codes.",
       "",
-      "When to call: before a flight/hotel search or booking, to tailor options — bias search_flights / search_hotels toward the preferred seat, meal, airline, stops, departure time, room type, meal plan and smoking choice, prefill nationality, lean on frequent destinations and the default sort, and always honor dietary and accessibility needs. Call once and reuse for the session.",
+      "When to call: before a flight/hotel search or booking, to tailor options — bias search_flights / search_hotels toward the preferred seat, meal, airline, stops, departure time, room type, meal plan and smoking choice, lean on frequent destinations and the default sort, and always honor dietary and accessibility needs. Call once and reuse for the session. (Nationality comes from get_main_client, not here.)",
       "",
       "Impersonation: if the upcoming search/booking runs with actAs=<email> (admin acting for another user), call this tool with the SAME actAs (and actAsCompanyId when set) so you read the TARGET user's preferences, not the admin's.",
       "",
