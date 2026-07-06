@@ -38,6 +38,9 @@ import { registerGetTravelerPreferences } from "./tools/get-traveler-preferences
 import { registerListTargetCompanies } from "./tools/list-target-companies.js";
 import { registerGetRateGuardSettings } from "./tools/get-rate-guard-settings.js";
 import { registerUpdateRateGuardSettings } from "./tools/update-rate-guard-settings.js";
+import { registerListReports } from "./tools/list-reports.js";
+import { registerGetReport } from "./tools/get-report.js";
+import { registerGetReportElement } from "./tools/get-report-element.js";
 import { registerListNotificationIntegrations } from "./tools/list-notification-integrations.js";
 import { registerGetTelegramStatus } from "./tools/get-telegram-status.js";
 import { registerGetSlackStatus } from "./tools/get-slack-status.js";
@@ -106,6 +109,11 @@ export function createServer(config: TravelCodeConfig): CreatedServer {
   // Rate Guard agency settings (director-only)
   registerGetRateGuardSettings(server, client);
   registerUpdateRateGuardSettings(server, client);
+
+  // Dynamic reports (universal — any current or future report id)
+  registerListReports(server, client);
+  registerGetReport(server, client);
+  registerGetReportElement(server, client);
 
   // Client (tourist) tools
   registerGetMainClient(server, client);

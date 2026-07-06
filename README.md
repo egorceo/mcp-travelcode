@@ -281,7 +281,7 @@ Works with **any MCP-compatible client** — including all major AI assistants, 
 | [MCP Inspector](https://github.com/modelcontextprotocol/inspector) | stdio | ✅ Tested |
 | Any MCP client | stdio / Streamable HTTP | ✅ Compatible |
 
-## Tools (50)
+## Tools (53)
 
 ### ✈️ Flight Search & Reference Data
 
@@ -340,6 +340,16 @@ Works with **any MCP-compatible client** — including all major AI assistants, 
 | `cancel_order` | Cancel an order with refund processing |
 | `check_order_modification` | Check what modifications are allowed (rebooking, baggage, contacts) |
 | `modify_order` | Modify an order — update contacts, passport info, rebook, add baggage |
+
+### 📈 Analytics Reports (Dynamic Reports)
+
+Universal tools — they discover reports and elements at runtime, so new backend reports need no MCP changes.
+
+| Tool | Description |
+|------|-------------|
+| `list_reports` | List analytics reports available to the current user |
+| `get_report` | Report structure: filters (with allowed values) and elements (tables, KPI tiles, charts) |
+| `get_report_element` | Fetch one element's data with filters (date range, companies, drill-in keys) |
 
 ## Example Conversations
 
