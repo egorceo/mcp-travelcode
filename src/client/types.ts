@@ -498,26 +498,35 @@ export interface HotelSSEConnected {
   cached?: boolean;
 }
 
-export interface HotelSSEHotelsBatch {
+// Travel-policy meta carried on count / hotels / sorted / completed events:
+// policyHidesOffers — the caller's policy hides violating hotels;
+// policyTotalFound — hotels found before policy hiding (count = available after).
+// Hidden = policyTotalFound - count.
+export interface HotelSSEPolicyMeta {
+  policyHidesOffers?: boolean;
+  policyTotalFound?: number;
+}
+
+export interface HotelSSEHotelsBatch extends HotelSSEPolicyMeta {
   batch: number;
   count: number;
   hotels: HotelOffer[];
 }
 
-export interface HotelSSESortedBatch {
+export interface HotelSSESortedBatch extends HotelSSEPolicyMeta {
   count: number;
   total: number;
   chunk: number;
   hotels: HotelOffer[];
 }
 
-export interface HotelSSECount {
+export interface HotelSSECount extends HotelSSEPolicyMeta {
   batch: number;
   count: number;
   total: number;
 }
 
-export interface HotelSSECompleted {
+export interface HotelSSECompleted extends HotelSSEPolicyMeta {
   count: number;
   hotels: HotelOffer[];
   cacheKey: string;
@@ -568,6 +577,12 @@ export interface HotelOfferRate {
   price: HotelOfferPrice;
   cancelPolicy: HotelOfferCancelPolicy;
 
+  // Travel policy verdict for this rate (present when the caller has an active
+  // policy). In hide mode violating rates are filtered out server-side, so these
+  // are mainly meaningful in show mode.
+  outOfPolicy?: boolean;
+  policyReasons?: string[];
+
   // Legacy / alias fields — present in older API builds, never required.
   partnerId?: number;
   externalId?: string;
@@ -613,6 +628,11 @@ export interface HotelOffersResponse {
   offers: Record<string, HotelOfferRoomGroup>;
   bronevikId?: number;
   hotelUrl?: string;
+  // Travel policy: policyRestricted = policy hides violating offers and at least
+  // one reason was met (offer set may be reduced or empty); policyReasons = the
+  // human-readable reasons why offers were hidden.
+  policyRestricted?: boolean;
+  policyReasons?: string[];
 }
 
 // --- Clients (Tourists) ---

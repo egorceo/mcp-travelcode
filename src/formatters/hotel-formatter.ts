@@ -51,14 +51,26 @@ export function formatHotelResults(
   hotels: HotelOffer[],
   totalCount: number,
   cacheKey?: string,
+  policy?: { policyHidesOffers?: boolean; hiddenByPolicy?: number },
 ): string {
+  const hidden = policy?.policyHidesOffers ? policy.hiddenByPolicy ?? 0 : 0;
+  const hiddenLine =
+    hidden > 0
+      ? `${hidden} hotel${hidden === 1 ? "" : "s"} hidden by your travel policy.`
+      : "";
+
   if (hotels.length === 0) {
+    if (hidden > 0) {
+      return `No hotels available under your travel policy — ${hidden} hotel${hidden === 1 ? " was" : "s were"} hidden because they exceed its limits.`;
+    }
     return totalCount > 0
       ? `Found ${totalCount} hotels total, but none in the current page. Try adjusting offset/limit or filters.`
       : "No hotels found matching your criteria.";
   }
 
-  const lines: string[] = [`Found ${totalCount} hotels total. Showing ${hotels.length}:\n`];
+  const lines: string[] = [`Found ${totalCount} hotels total. Showing ${hotels.length}:`];
+  if (hiddenLine) lines.push(hiddenLine);
+  lines.push("");
 
   for (const hotel of hotels) {
     const starRating = (hotel.starRating as number) ?? (hotel.stars as number);
@@ -111,6 +123,21 @@ export function formatHotelOffers(data: HotelOffersResponse): string {
     totalRates += group.rates.length;
   }
 
+  // Travel policy: when the caller's policy hides violating offers, explain why
+  // the offer set is reduced (or empty). Surface reasons to the user.
+  const policyReasons = data.policyReasons ?? [];
+  if (data.policyRestricted && policyReasons.length > 0) {
+    lines.push("");
+    if (totalRates === 0) {
+      lines.push("No offers available under your travel policy. Reason(s):");
+    } else {
+      lines.push("Some offers are hidden by your travel policy. Reason(s):");
+    }
+    for (const reason of policyReasons) {
+      lines.push(`  • ${reason}`);
+    }
+  }
+
   lines.push("");
   lines.push(`${roomGroups.length} room types, ${totalRates} rates total:`);
   lines.push("");
@@ -151,8 +178,12 @@ export function formatHotelOffers(data: HotelOffersResponse): string {
         rate.id ||
         rate.quoteKey ||
         rate.externalId;
-      lines.push(`    ${rate.price.nightly} ${rate.price.currency}/night | ${rate.boardName} | ${cancelTag}`);
+      const policyTag = rate.outOfPolicy ? " | Out of travel policy" : "";
+      lines.push(`    ${rate.price.nightly} ${rate.price.currency}/night | ${rate.boardName} | ${cancelTag}${policyTag}`);
       if (rate.roomName) lines.push(`      Room: ${rate.roomName}`);
+      if (rate.outOfPolicy && rate.policyReasons && rate.policyReasons.length > 0) {
+        lines.push(`      Policy: ${rate.policyReasons.join("; ")}`);
+      }
       if (policy.title) lines.push(`      Cancellation: ${policy.title}`);
       if (policy.rules && policy.rules.length > 0) {
         for (const r of policy.rules) {

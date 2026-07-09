@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TravelCodeApiClient } from "../client/api-client.js";
-import { HotelOffer, HotelSSECompleted, HotelSSEHotelsBatch, HotelSSESortedBatch } from "../client/types.js";
+import { HotelOffer, HotelSSECompleted, HotelSSECount, HotelSSEHotelsBatch, HotelSSESortedBatch } from "../client/types.js";
 import { formatHotelResults } from "../formatters/hotel-formatter.js";
 import { impersonationInputSchema, withImpersonation } from "../util/impersonation-tool.js";
 
@@ -92,6 +92,7 @@ export function registerSearchHotels(server: McpServer, client: TravelCodeApiCli
       "USER-FACING LANGUAGE (mandatory):",
       "  • Talk in plain language. Never expose internal labels or values: search reference, location id, parameter names (country_code, guests, sort, filter, …), REST routes, or error codes. Just describe results.",
       "  • The block at the bottom of this tool's output marked '(internal — do not show to user)' is for downstream tool calls only. Never quote it or mention it.",
+      "  • If the output contains a 'hidden by your travel policy' line, DO surface it to the user in plain language (e.g. 'N hotels were hidden because they exceed your travel policy'). If zero hotels are available for that reason, tell the user everything was filtered out by their travel policy.",
       "",
       "Lead-guest nationality (country_code) — STRICT rules, no shortcuts:",
       "  • Pricing and availability depend on it; it must match the lead guest's nationality at booking. A wrong nationality means the booking will either change price or fail.",
@@ -135,19 +136,35 @@ export function registerSearchHotels(server: McpServer, client: TravelCodeApiCli
         const hotels: HotelOffer[] = [];
         let totalCount = 0;
         let cacheKey: string | undefined;
+        // Travel-policy hidden-hotel tracking (carried on count/hotels/sorted/
+        // completed events). policyTotalFound = found before hiding; take the max
+        // seen, since it grows as batches arrive.
+        let policyHidesOffers = false;
+        let policyTotalFound = 0;
+        const trackPolicy = (m: { policyHidesOffers?: boolean; policyTotalFound?: number }) => {
+          if (m.policyHidesOffers) policyHidesOffers = true;
+          if (typeof m.policyTotalFound === "number" && m.policyTotalFound > policyTotalFound) {
+            policyTotalFound = m.policyTotalFound;
+          }
+        };
 
         for (const { event, data } of events) {
           if (event === "hotels") {
             const batch = data as HotelSSEHotelsBatch;
             hotels.push(...batch.hotels);
+            trackPolicy(batch);
           } else if (event === "sorted_hotels") {
             const batch = data as HotelSSESortedBatch;
             hotels.push(...batch.hotels);
             totalCount = batch.total;
+            trackPolicy(batch);
+          } else if (event === "count") {
+            trackPolicy(data as HotelSSECount);
           } else if (event === "completed") {
             const completed = data as HotelSSECompleted;
             totalCount = completed.count;
             cacheKey = completed.cacheKey;
+            trackPolicy(completed);
             // In price mode, completed contains the hotels
             if (completed.hotels && completed.hotels.length > 0) {
               hotels.length = 0; // clear intermediate results
@@ -167,8 +184,19 @@ export function registerSearchHotels(server: McpServer, client: TravelCodeApiCli
           }
         }
 
+        const hiddenByPolicy =
+          policyHidesOffers && policyTotalFound > totalCount ? policyTotalFound - totalCount : 0;
+
         return {
-          content: [{ type: "text", text: formatHotelResults(hotels, totalCount, cacheKey) }],
+          content: [
+            {
+              type: "text",
+              text: formatHotelResults(hotels, totalCount, cacheKey, {
+                policyHidesOffers,
+                hiddenByPolicy,
+              }),
+            },
+          ],
         };
       } catch (error) {
         return {

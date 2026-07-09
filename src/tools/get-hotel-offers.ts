@@ -37,6 +37,7 @@ export function registerGetHotelOffers(server: McpServer, client: TravelCodeApiC
       "  • Speak about 'rooms', 'rates', 'free cancellation until <date>', 'penalty after <date>', 'refundable / non-refundable / partially refundable'. Never quote internal labels: hotel id, search reference, offer reference, parameter names, REST routes, error codes.",
       "  • The 'Hotel page: <url>' line IS for the user — surface it as a clickable link to view the hotel on the agency site. Do not show the raw URL string in chat; render it as a friendly link.",
       "  • The block marked '(internal — do not show to user)' is for downstream tool calls only. Never quote or mention it.",
+      "  • If the output shows a travel-policy note (offers hidden / no offers available under travel policy, with reason(s)), DO relay it to the user in plain language, including the reason(s) — that is why some or all rooms are missing.",
       "",
       "Pass the SAME nationality and guest composition (including children's ages) that were used in search_hotels — otherwise prices and availability will diverge.",
       "If the originating search_hotels call used actAs/actAsCompanyId, pass the SAME values here so the offer fetch runs as the same target user. Mismatching impersonation will return a different rate or 404.",
