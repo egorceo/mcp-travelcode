@@ -55,6 +55,14 @@ import { registerListNotificationEmailBcc } from "./tools/list-notification-emai
 import { registerAddNotificationEmailBcc } from "./tools/add-notification-email-bcc.js";
 import { registerSendNotificationEmailBccConfirmation } from "./tools/send-notification-email-bcc-confirmation.js";
 import { registerDeleteNotificationEmailBcc } from "./tools/delete-notification-email-bcc.js";
+import { registerListTravelPolicies } from "./tools/list-travel-policies.js";
+import { registerGetTravelPolicy } from "./tools/get-travel-policy.js";
+import { registerListDepartments } from "./tools/list-departments.js";
+import { registerSearchEmployees } from "./tools/search-employees.js";
+import { registerGetEmployee } from "./tools/get-employee.js";
+import { registerCreateEmployee } from "./tools/create-employee.js";
+import { registerAssignTravelPolicy } from "./tools/assign-travel-policy.js";
+import { registerMoveEmployeeToDepartment } from "./tools/move-employee-to-department.js";
 
 export interface CreatedServer {
   server: McpServer;
@@ -150,6 +158,16 @@ export function createServer(config: TravelCodeConfig): CreatedServer {
   registerAddNotificationEmailBcc(server, client);
   registerSendNotificationEmailBccConfirmation(server, client);
   registerDeleteNotificationEmailBcc(server, client);
+
+  // Travel policies, departments, employees (company administration)
+  registerListTravelPolicies(server, client);
+  registerGetTravelPolicy(server, client);
+  registerListDepartments(server, client);
+  registerSearchEmployees(server, client);
+  registerGetEmployee(server, client);
+  registerCreateEmployee(server, client);
+  registerAssignTravelPolicy(server, client);
+  registerMoveEmployeeToDepartment(server, client);
 
   return { server, apiClient: client };
 }

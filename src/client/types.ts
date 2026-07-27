@@ -1121,3 +1121,192 @@ export interface TravelerPreferences {
   destinations?: { flights?: PreferenceFlightDestination[]; hotels?: PreferenceHotelDestination[] };
   sort?: { flight?: string | null; hotel?: string | null };
 }
+
+// --- Travel policies ---
+
+/** Gated numeric rule: applies only when enabled; value is a stringified number ("" when unset). */
+export interface PolicyGatedValue {
+  enabled: boolean;
+  value: string;
+}
+
+export interface PolicyPersonRef {
+  id: number;
+  name: string;
+}
+
+export interface TravelPolicyListItem {
+  id: number;
+  name: string;
+  agencyId: number | null;
+  author: PolicyPersonRef | null;
+  createdAt: number | null;
+  editable: boolean;
+  roleId: number[];
+  userId: number[];
+  departments: PolicyPersonRef[];
+  flightDescription: string;
+  hotelDescription: string;
+  railwayDescription: string;
+  transferDescription: string;
+}
+
+export interface TravelPoliciesResponse {
+  items: TravelPolicyListItem[];
+  total: number;
+  packageLimit?: number;
+  splitPaymentEnabled?: boolean;
+}
+
+export interface TravelPolicyCityOverride {
+  cityId: string | number;
+  cityName: string;
+  cityAddress: string;
+  value: string;
+}
+
+export interface TravelPolicyGeneral {
+  currency: string;
+  violation: string;
+  violationUserIds: number[];
+  purchase: string;
+  purchaseUserIds: number[];
+  splitPaymentEnabled: boolean;
+}
+
+export interface TravelPolicyFlight {
+  maxPriceOneWay: PolicyGatedValue;
+  cityOverrides: TravelPolicyCityOverride[];
+  maxAfterCheapestPrice: PolicyGatedValue;
+  maxAfterCheapestMode: string;
+  minDaysBeforeFlight: PolicyGatedValue;
+  classEconomyOnly: boolean;
+  classPremiumEconomyOnly: boolean;
+  classBusinessOnly: boolean;
+  classFirstOnly: boolean;
+  onlyWithLuggage: boolean;
+  onlyWorkingDays: boolean;
+  onlyFullyRefundable: boolean;
+}
+
+export interface TravelPolicyHotel {
+  maxPriceNightly: PolicyGatedValue;
+  cityOverrides: TravelPolicyCityOverride[];
+  maxStars: PolicyGatedValue;
+  propertyTypes: { enabled: boolean; types: string[] };
+  longStayPropertyTypes: { enabled: boolean; minNights: string; alsoBlock: string[]; allowAnyway: string[] };
+  minDaysBeforeCheckin: PolicyGatedValue;
+  onlyFullyRefundable: boolean;
+}
+
+export interface TravelPolicyRailway {
+  maxPriceOneWay: PolicyGatedValue;
+  wagonTypes: string[];
+  minDaysBeforeTrip: PolicyGatedValue;
+}
+
+export interface TravelPolicyTransfer {
+  maxPrice: PolicyGatedValue;
+  minDaysBefore: PolicyGatedValue;
+}
+
+export interface TravelPolicyFull {
+  id: number;
+  name: string;
+  agencyId: number | null;
+  author: PolicyPersonRef | null;
+  createdAt: number | null;
+  editable: boolean;
+  roleId: number[];
+  userId: number[];
+  departmentId: number[];
+  departmentAdminIncluded: boolean;
+  general: TravelPolicyGeneral;
+  flight: TravelPolicyFlight;
+  hotel: TravelPolicyHotel;
+  railway: TravelPolicyRailway;
+  transfer: TravelPolicyTransfer;
+}
+
+// --- Company departments ---
+
+export interface DepartmentNode {
+  id: number;
+  parentId: number | null;
+  name: string;
+  description?: string;
+  directMembers?: number;
+  totalMembers?: number;
+  admins?: PolicyPersonRef[];
+  children?: DepartmentNode[];
+}
+
+export interface DepartmentsResponse {
+  companyId?: number;
+  items: DepartmentNode[];
+  unassignedCount?: number;
+  companyName?: string;
+}
+
+export interface DepartmentMembersResponse {
+  policyChangedUserIds?: number[];
+  approvals?: unknown;
+}
+
+// --- Employees (users) ---
+
+export interface EmployeeEffectivePolicy {
+  id: number;
+  name: string;
+  source: string; // personal | departmentMember | departmentAdmin | role
+  department: string | null;
+}
+
+export interface EmployeeListItem {
+  id: number;
+  email: string;
+  phone: string;
+  username: string;
+  agencyName: string;
+  avatar: string | null;
+  role: string;
+  status: string;
+  userType: string;
+  createdAt: string;
+  cardAccess: boolean;
+  department: string | null;
+  type: string;
+  travelPolicy: EmployeeEffectivePolicy | null;
+}
+
+export interface EmployeeDetail extends EmployeeListItem {
+  roleId: number;
+  companyId: number | null;
+  travelPolicyId: number | null;
+}
+
+export interface EmployeesSearchResponse {
+  meta: { page: number; perpage: number; total: number; pages: number };
+  data: EmployeeListItem[];
+}
+
+// --- Bulk travel-policy assignment ---
+
+export interface AssignPolicyConflict {
+  id: number;
+  policyId: number;
+  policyName: string;
+}
+
+export interface AssignPolicySkipped extends AssignPolicyConflict {
+  error: string;
+}
+
+export interface AssignTravelPolicyResponse {
+  succeeded: number[];
+  failed: Array<{ id: number; error: string }>;
+  dryRun?: boolean;
+  conflicts?: AssignPolicyConflict[];
+  skipped?: AssignPolicySkipped[];
+  approvals?: unknown;
+}
