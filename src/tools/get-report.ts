@@ -12,6 +12,7 @@ interface ReportFilter {
   type: string;
   label?: string;
   default?: unknown;
+  source?: string;
   options?: Array<{ value: string; label: string }>;
 }
 
@@ -48,13 +49,20 @@ export function registerGetReport(server: McpServer, client: TravelCodeApiClient
         const filters = (data.filters ?? []).map((f) => {
           const parts = [`- ${f.id} (${f.type})${f.label ? ` — ${f.label}` : ""}`];
           if (f.type === "date_range") {
-            parts.push("  pass as: date_from / date_to (YYYY-MM-DD)");
+            parts.push("  pass as: date_from / date_to (YYYY-MM-DD). Filters by the record's booking/creation date, not stay or travel dates.");
           }
           if (f.options?.length) {
             parts.push(`  options: ${f.options.map((o) => `${o.value}=${JSON.stringify(o.label)}`).join(", ")}`);
+          } else if (f.source === "countries") {
+            parts.push('  values: ISO 3166-1 alpha-2 country codes, comma-separated (e.g. "US", "PL", "US,GB") — NOT country names like "USA" or "Poland". A wrong value silently returns empty data.');
+          } else if (f.type === "multi_select") {
+            parts.push("  values: raw ids/codes, not display names.");
           }
           if (f.default !== undefined) {
             parts.push(`  default: ${JSON.stringify(f.default)}`);
+            if (f.type === "date_range") {
+              parts.push("  NOTE: if date_from/date_to are omitted, the server APPLIES this default period — results are NOT all-time. Pass explicit dates for other periods, and mention the effective period in your answer.");
+            }
           }
           return parts.join("\n");
         });
