@@ -1054,7 +1054,7 @@ export interface EmailBccDeleteResponse {
 
 // --- Rate Guard (agency settings) ---
 
-export interface RateGuardDefaults {
+export interface RateGuardSection {
   enabled: boolean;
   savingPercent: number;
   savingAmountUsd: number;
@@ -1062,8 +1062,16 @@ export interface RateGuardDefaults {
   minDaysBeforeCheckin: number;
 }
 
-export interface RateGuardSettings extends RateGuardDefaults {
+export interface RateGuardDefaults {
+  email: RateGuardSection;
+  autoRebook: RateGuardSection;
+}
+
+export interface RateGuardSettings {
+  email: RateGuardSection;
+  autoRebook: RateGuardSection;
   defaults: RateGuardDefaults;
+  canEdit: boolean;
   updatedAt: number | null;
   updatedBy: number | null;
 }

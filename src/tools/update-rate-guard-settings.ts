@@ -8,19 +8,26 @@ import { formatRateGuardSettings } from "../formatters/rate-guard-formatter.js";
 const numericOrNull = z.union([z.number(), z.null()]).optional();
 const intOrNull = z.union([z.number().int(), z.null()]).optional();
 
+const sectionSchema = z
+  .object({
+    enabled: z.boolean().optional().describe("On/off toggle for this section."),
+    savingPercent: numericOrNull.describe(
+      "Minimum savings in percent (0–100). Pass null to reset to the platform default.",
+    ),
+    savingAmountUsd: numericOrNull.describe("Minimum savings in USD (>=0). Pass null to reset to default."),
+    maxEarlierCancelShiftDays: intOrNull.describe(
+      "How many days earlier the new offer's free-cancellation deadline may fall vs the source (>=0). Pass null to reset.",
+    ),
+    minDaysBeforeCheckin: intOrNull.describe("Minimum days before check-in (>=0). Pass null to reset."),
+  })
+  .optional();
+
 export const updateRateGuardSettingsSchema = {
-  enabled: z.boolean().optional().describe("Master toggle for the rate-guard feature on this agency."),
-  savingPercent: numericOrNull.describe(
-    "Minimum savings in percent (0–100) to trigger rebook/notification. Pass null to reset to the platform default.",
+  email: sectionSchema.describe(
+    "Email-notifications section — notifies the traveller and booking manager when a cheaper rate appears. Turning it off also silences the notification-center entries.",
   ),
-  savingAmountUsd: numericOrNull.describe(
-    "Minimum savings in USD (>=0). Pass null to reset to default.",
-  ),
-  maxEarlierCancelShiftDays: intOrNull.describe(
-    "How many days earlier the new offer's free-cancellation deadline may fall vs the source (>=0). Pass null to reset.",
-  ),
-  minDaysBeforeCheckin: intOrNull.describe(
-    "Minimum days before check-in for auto-rebook to be allowed (>=0). Pass null to reset.",
+  autoRebook: sectionSchema.describe(
+    "Auto-rebook section — automatically rebooks the cheaper rate and cancels the original booking when safe. Applies only to bookings up to $1000.",
   ),
 };
 
@@ -28,26 +35,30 @@ export function registerUpdateRateGuardSettings(server: McpServer, client: Trave
   server.tool(
     "update_rate_guard_settings",
     [
-      "Update (upsert) the agency-level Rate Guard settings. Idempotent — only the fields present in the call are applied. Pass null in a numeric field to reset it to the platform default.",
+      "Update (upsert) the agency-level Rate Guard settings. Idempotent — only the sections/fields present in the call are applied. Pass null in a numeric field to reset it to the platform default.",
+      "",
+      "Settings are split into two sections: 'email' (notifications) and 'autoRebook'. Provide either or both; within a section provide only the fields you want to change.",
       "",
       "USER-FACING LANGUAGE: 'update rate guard', 'savings threshold', 'cancel-deadline window'. Never quote internal field names or REST routes.",
       "",
-      "Director role only — admins are not allowed by the REST layer. Operates on the currently active agency of the authenticated user.",
+      "Editing requires a Pro plan or an admin role; otherwise the REST layer returns a permission error. Operates on the currently active agency of the authenticated user.",
     ].join("\n"),
     { ...updateRateGuardSettingsSchema, ...impersonationInputSchema },
     withImpersonation(async (args) => {
+      const { email, autoRebook } = args;
       const body: Record<string, unknown> = {};
-      const { enabled, savingPercent, savingAmountUsd, maxEarlierCancelShiftDays, minDaysBeforeCheckin } = args;
 
-      if (enabled !== undefined) body.enabled = enabled;
-      if (savingPercent !== undefined) body.savingPercent = savingPercent;
-      if (savingAmountUsd !== undefined) body.savingAmountUsd = savingAmountUsd;
-      if (maxEarlierCancelShiftDays !== undefined) body.maxEarlierCancelShiftDays = maxEarlierCancelShiftDays;
-      if (minDaysBeforeCheckin !== undefined) body.minDaysBeforeCheckin = minDaysBeforeCheckin;
+      if (email !== undefined) body.email = email;
+      if (autoRebook !== undefined) body.autoRebook = autoRebook;
 
       if (Object.keys(body).length === 0) {
         return {
-          content: [{ type: "text", text: "No fields to update. Pass at least one of enabled, savingPercent, savingAmountUsd, maxEarlierCancelShiftDays, minDaysBeforeCheckin." }],
+          content: [
+            {
+              type: "text",
+              text: "No fields to update. Pass an 'email' and/or 'autoRebook' object with at least one field (enabled, savingPercent, savingAmountUsd, maxEarlierCancelShiftDays, minDaysBeforeCheckin).",
+            },
+          ],
           isError: true,
         };
       }

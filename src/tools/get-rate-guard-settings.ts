@@ -10,11 +10,11 @@ export function registerGetRateGuardSettings(server: McpServer, client: TravelCo
   server.tool(
     "get_rate_guard_settings",
     [
-      "Return the agency-level Rate Guard settings (auto-rebook thresholds) for the currently active agency of the authenticated user. Director role only — admins are not allowed by the REST layer.",
+      "Return the agency-level Rate Guard settings for the currently active agency of the authenticated user. Available to travel-management roles (director / travel manager) and admin roles; rank-and-file employees are blocked by the REST layer.",
       "",
       "USER-FACING LANGUAGE: speak about 'rate guard', 'savings threshold', 'check-in window'. Never quote internal field names or REST routes.",
       "",
-      "Settings cover: master toggle, minimum savings in percent, minimum savings in USD, how many days earlier the new offer's free-cancellation deadline may fall vs the original, and the minimum days before check-in for auto-rebook. Defaults are returned alongside effective values so the UI/LLM can show placeholders.",
+      "Settings are split into two independent sections — 'Email notifications' and 'Auto rebook' — each with: on/off toggle, minimum savings in percent, minimum savings in USD, how many days earlier the new offer's free-cancellation deadline may fall vs the original, and the minimum days before check-in. Defaults are returned per section alongside the effective values. The response also carries whether the current user may edit (Pro plan / admin) or only view.",
     ].join("\n"),
     { ...getRateGuardSettingsSchema, ...impersonationInputSchema },
     withImpersonation(async () => {

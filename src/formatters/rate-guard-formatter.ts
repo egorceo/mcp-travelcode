@@ -1,14 +1,23 @@
-import { RateGuardSettings } from "../client/types.js";
+import { RateGuardSection, RateGuardSettings } from "../client/types.js";
+
+function formatSection(title: string, s: RateGuardSection, d: RateGuardSection): string[] {
+  return [
+    `${title}: ${s.enabled ? "enabled" : "disabled"}`,
+    "  Thresholds (effective / default):",
+    `    - Min savings, percent:        ${s.savingPercent} / ${d.savingPercent}`,
+    `    - Min savings, USD:            ${s.savingAmountUsd} / ${d.savingAmountUsd}`,
+    `    - Cancel-deadline shift, days: ${s.maxEarlierCancelShiftDays} / ${d.maxEarlierCancelShiftDays}`,
+    `    - Min days before check-in:    ${s.minDaysBeforeCheckin} / ${d.minDaysBeforeCheckin}`,
+  ];
+}
 
 export function formatRateGuardSettings(s: RateGuardSettings): string {
   const lines: string[] = [];
-  lines.push(`Rate Guard: ${s.enabled ? "enabled" : "disabled"}`);
+  lines.push(s.canEdit ? "Editing: allowed (pro plan / admin)" : "Editing: locked — read-only (Pro plan required)");
   lines.push("");
-  lines.push("Effective thresholds (effective / default):");
-  lines.push(`  - Min savings, percent:       ${s.savingPercent} / ${s.defaults.savingPercent}`);
-  lines.push(`  - Min savings, USD:           ${s.savingAmountUsd} / ${s.defaults.savingAmountUsd}`);
-  lines.push(`  - Cancel-deadline shift, days:${s.maxEarlierCancelShiftDays} / ${s.defaults.maxEarlierCancelShiftDays}`);
-  lines.push(`  - Min days before check-in:   ${s.minDaysBeforeCheckin} / ${s.defaults.minDaysBeforeCheckin}`);
+  lines.push(...formatSection("Email notifications", s.email, s.defaults.email));
+  lines.push("");
+  lines.push(...formatSection("Auto rebook", s.autoRebook, s.defaults.autoRebook));
   lines.push("");
 
   if (s.updatedAt === null) {
