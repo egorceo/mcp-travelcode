@@ -46,7 +46,6 @@ describe("formatPreferences", () => {
       flight: { seat: "window", meal: "regular", carriers: ["FZ"], stops: "nonstop", timeOfDay: "morning" },
       hotel: { roomType: "king", smoking: "non_smoking", board: "AI" },
       special: { dietary: "", accessibility: [] },
-      searchDefaults: { nationality: "BY" },
       destinations: {
         flights: [
           { code: "MSQ", title: "Минск", titleEn: "Minsk", countryTitle: "Беларусь", countryTitleEn: "Belarus" },
@@ -62,7 +61,6 @@ describe("formatPreferences", () => {
     expect(out).toContain("Flight stops: nonstop only");
     expect(out).toContain("Preferred departure time: morning (05:00–09:00)");
     expect(out).toContain("Hotel meal plan: All inclusive");
-    expect(out).toContain("Default nationality: BY");
     expect(out).toContain("Frequent flight destinations: Minsk (MSQ), Moscow (MOW)");
     expect(out).toContain("Frequent hotel destinations: Minsk");
     expect(out).toContain("Default flight sort: cheapest");
